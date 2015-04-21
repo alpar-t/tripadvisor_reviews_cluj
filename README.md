@@ -5,7 +5,8 @@ To make it easy to run use [virtualenv|http://docs.python-guide.org/en/latest/de
 
 ## Setup
     
-    virtualenv venv
+    virtualenv -p /usr/bin/python2.7 venv
+    source venv/bin/activate
     pip install -r requirements.txt
 
 ## Activate the virtual environemnt 
