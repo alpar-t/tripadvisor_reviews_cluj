@@ -1,4 +1,5 @@
 venv
 *.pyc
 items.json
+items.csv
 .ropeproject
