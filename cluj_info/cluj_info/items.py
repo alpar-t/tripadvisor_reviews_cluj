@@ -16,7 +16,18 @@ class AttractionItem(scrapy.Item):
     number_of_reviews = scrapy.Field()
 
 
+
+
 class ReviewItem(scrapy.Item):
     """ Details of individual reviews """
     attractionName = scrapy.Field()
+    ranking = scrapy.Field()
     text = scrapy.Field()
+    partial_text = scrapy.Field()
+    summary = scrapy.Field()
+    reviewer_name = scrapy.Field()
+    reviewer_location = scrapy.Field()
+    reviewer_reviews = scrapy.Field()
+    reviewer_atractions = scrapy.Field()
+    reviewer_cities = scrapy.Field()
+    reviewer_helpfull_votes = scrapy.Field()
