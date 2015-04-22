@@ -22,7 +22,7 @@ class TripadvisorSpider(scrapy.Spider):
         """ Parse the review pages """
         for section in response.css('div.reviewSelector'):
             item = ReviewItem()
-            item["attractionName"] = response.meta['item']["name"][0]
+            item["attractionName"] = response.meta['item']["name"]
             summary = section.css(".noQuotes").xpath("text()").extract()
             if not summary:
                 # not all sections are relevant
