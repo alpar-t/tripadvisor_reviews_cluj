@@ -19,17 +19,32 @@ class TripadvisorSpider(scrapy.Spider):
     """ Parse the main attractions and their revies  """
     name = "tripadvisor"
     allowed_domains = ["tripadvisor.com"]
-    start_urls = (
-        TRIPADVISOR_HOME +
-        '/Attractions-g298474-Activities-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
-    )
+    start_urls = [
+        TRIPADVISOR_HOME + x for x in (
+            '/Attractions-g298474-Activities-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            # manual work around for the groups that show up above, and require a click to get to
+            # these are loaded with JS so not as straight forward to walk with the crawler
+            '/Attractions-g298474-Activities-c56-t110-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c56-t208-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c56-t261-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c61-t214-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c26-t144-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c61-t263-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c42-t225-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c42-t139-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c40-t127-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html',
+            '/Attractions-g298474-Activities-c58-t111-Cluj_Napoca_Cluj_County_Northwest_Romania_Transylvania.html'
+        )
+    ]
 
     def parse(self, response):
         self.log("Parsing list of attractions from %s" % response.url, level=log.INFO)
 
+        atLeastOneFound = False
         for section in response.css('.entry'):
             try:
                 item = self._parseAttractionFromSection(section)
+                atLeastOneFound = True
                 yield self._createLocalRequest(
                     item["reviewsPage"],
                     callback=self.parse_reviews,
@@ -37,7 +52,7 @@ class TripadvisorSpider(scrapy.Spider):
                 )
             except DidTheMarkupChangeOrWhat, why:
                 self.log("Ignoring attraction section: %s" % why)
-        else:
+        if not atLeastOneFound:
             raise DidTheMarkupChangeOrWhat("Can't find any sections for attractions on %s" % response)
         next_page_url = self._attractionsNextPage(response)
         if next_page_url:
@@ -46,13 +61,21 @@ class TripadvisorSpider(scrapy.Spider):
 
     def parse_reviews(self, response):
         """ Parse the review pages """
+        atLeastOneFound = False
         for section in response.css('div.reviewSelector'):
             try:
-                yield self._parseReviewFromSection(section, response.meta['item'])
+                atLeastOneFound = True
+                if [ x for x in  section.xpath("text()").extract() if x.strip() ]:
+                    yield self._parseReviewFromSection(section, response.meta['item'])
+                else:
+                    self.log("Found and empty review section, will ignore it", level=log.DEBUG)
             except DidTheMarkupChangeOrWhat, why:
-                self.log("Ignoring review section: %s" % why)
-        else:
-            raise DidTheMarkupChangeOrWhat("Can't find any sections for reviews")
+                self.log("Ignoring review on %s: %s" % (response.url, why), log=log.ERROR)
+        if not atLeastOneFound:
+            if "Be the first to share your experiences!" in response.css("body").extract()[0]:
+                self.log("Doesn't seem to have any reviews")
+            else:
+                raise DidTheMarkupChangeOrWhat("Can't find any sections for reviews")
         next_page = self._reviewsNextPage(response)
         if next_page:
             yield self._createLocalRequest(
@@ -81,14 +104,22 @@ class TripadvisorSpider(scrapy.Spider):
         item["attractionName"] = attractionItem["name"]
         summary = section.css(".noQuotes").xpath("text()").extract()
         if not summary:
-            # not all sections are relevant
-            raise DidTheMarkupChangeOrWhat(
-               "Review section is not laid out as expected, can;'t make sense of it",
-               section.xpath("text()").extract()
-            )
+            # no sure why this sometimes comes back with a different format...
+            summary = section.css(".taLnk").xpath("text()").extract()
+            if not summary:
+                raise DidTheMarkupChangeOrWhat(
+                    "Review section is not laid out as expected, can't make sense of it",
+                    section.extract()
+                )
         item["partial_text"] = section.css(".partial_entry").xpath("text()").extract()[0]
-        item["reviewer_name"] = section.css("span.scrname").xpath("text()").extract()[0]
-        item["reviewer_location"] = section.css(".location").xpath("text()").extract()[0]
+        try:
+            item["reviewer_name"] = section.css("span.scrname").xpath("text()").extract()[0]
+        except IndexError:
+            item["reviewer_name"] = "unknonw"
+        try:
+            item["reviewer_location"] = section.css(".location").xpath("text()").extract()[0]
+        except:
+            item["reviewer_location"] = "unknonw"
         item["summary"] = summary[0]
         return item
 
