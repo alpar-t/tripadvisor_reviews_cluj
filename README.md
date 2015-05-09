@@ -38,3 +38,8 @@ To make it easy to run use [virtualenv](http://docs.python-guide.org/en/latest/d
 ### When adding new packages 
  
     pip freeze > requirements.txt
+
+### Run the scrappy spider 
+ 
+    cd scrappy_vanilla
+    scrapy crawl tripadvisor -o items.csv
