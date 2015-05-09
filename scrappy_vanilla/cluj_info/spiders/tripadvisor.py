@@ -65,10 +65,10 @@ class TripadvisorSpider(scrapy.Spider):
         for section in response.css('div.reviewSelector'):
             try:
                 atLeastOneFound = True
-                if [ x for x in  section.xpath("text()").extract() if x.strip() ]:
-                    yield self._parseReviewFromSection(section, response.meta['item'])
-                else:
-                    self.log("Found and empty review section, will ignore it", level=log.DEBUG)
+                #if [ x for x in  section.xpath("text()").extract() if x.strip() ]:
+                yield self._parseReviewFromSection(section, response.meta['item'])
+                #else:
+                #    self.log("Found and empty review section, will ignore it", level=log.DEBUG)
             except DidTheMarkupChangeOrWhat, why:
                 self.log("Ignoring review on %s: %s" % (response.url, why), log=log.ERROR)
         if not atLeastOneFound:
@@ -112,14 +112,19 @@ class TripadvisorSpider(scrapy.Spider):
                     section.extract()
                 )
         item["partial_text"] = section.css(".partial_entry").xpath("text()").extract()[0]
-        try:
-            item["reviewer_name"] = section.css("span.scrname").xpath("text()").extract()[0]
-        except IndexError:
-            item["reviewer_name"] = "unknonw"
-        try:
-            item["reviewer_location"] = section.css(".location").xpath("text()").extract()[0]
-        except:
-            item["reviewer_location"] = "unknonw"
+        fielmap = {
+            "reviewer_name": "span.scrname",
+            "reviewer_location": ".location",
+            "date": ".ratingDate",
+            "reviewer_reviews": ".badgeText"
+        }
+        for key, selector in fielmap.items():
+            try:
+                item[key] = section.css(selector).xpath("text()").extract()[0]
+            except IndexError:
+                item[key] = "unknonw"
+        item["date"] =  item["date"].replace("Reviewed", "").strip()
+        item["reviewer_reviews"] =  item["reviewer_reviews"].replace("reviews", "").strip().split(" ")[0].split(" ")[0]
         item["summary"] = summary[0]
         return item
 
@@ -128,7 +133,6 @@ class TripadvisorSpider(scrapy.Spider):
         assert len(next_buttons) in [0, 1]
         if next_buttons:
             return next_buttons[0]
-
 
     def _attractionsNextPage(self, response):
         next_page_url = [
