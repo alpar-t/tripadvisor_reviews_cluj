@@ -41,5 +41,5 @@ To make it easy to run use [virtualenv](http://docs.python-guide.org/en/latest/d
 
 ### Run the scrappy spider 
  
-    cd scrappy_vanilla
+    cd scrappy
     scrapy crawl tripadvisor -o items.csv
