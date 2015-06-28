@@ -13,11 +13,12 @@ be. So I set out to put these tools to use :
     - Scrappy ( out of the box )
     - Scrappy ( with phantomjs )
     - Geb ( with phantomjs )
+    - (CasperJs)[http://casperjs.org/] ( also uses pphantomjs )
 
-I have used Geb before, but in a different context, and have not used Scrappy. 
+I have used Geb before, but in a different context, and have not used Scrappy or CasperJs. 
 Out of this experiment I expect to get some experience with these tools and write an article about
 the problems and challenges of extracting data when there is no API available, and maybe prototype
-some tools to go with it and write an article about it. 
+some tools to go with it and write an article about pros and cons. 
 
 # Development 
 
